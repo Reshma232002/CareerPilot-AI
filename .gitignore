@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+.streamlit/
+firebase_key.json
+resume_report.pdf

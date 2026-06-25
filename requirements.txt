@@ -1,0 +1,11 @@
+streamlit
+pandas
+plotly
+scikit-learn
+reportlab
+pypdf
+google-generativeai
+firebase-admin
+pyrebase4
+pymupdf
+razorpay
