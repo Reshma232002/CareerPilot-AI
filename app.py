@@ -309,7 +309,9 @@ def login_signup():
             except Exception as e:
                 st.error(f"Login failed: {str(e)}")
 
+    st.sidebar.success(f"👋 {st.session_state.user_email}")
 
+    st.sidebar.write("CareerPilot AI")
 # ==================================================
 # MAIN APP
 # ==================================================
