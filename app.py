@@ -189,131 +189,131 @@ def resume_analysis():
             st.metric("Matched Skills", len(result["matched"]))
 
         st.progress(score / 100)
-# ==========================================
-# TABS
-# ==========================================
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Skills",
-    "🤖 AI Insights",
-    "📝 Cover Letter",
-    "💼 LinkedIn",
-    "🎤 Interview"
-])
+        # ==========================================
+        # TABS
+        # ==========================================
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "📊 Skills",
+            "🤖 AI Insights",
+            "📝 Cover Letter",
+            "💼 LinkedIn",
+            "🎤 Interview"
+        ])
 
-# ==========================================
-# Skills
-# ==========================================
-with tab1:
+        # ==========================================
+        # Skills
+        # ==========================================
+        with tab1:
 
-    col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-    with col1:
-        st.subheader("✅ Matched Skills")
+            with col1:
+                st.subheader("✅ Matched Skills")
 
-        if result["matched"]:
-            for skill in result["matched"]:
-                st.success(skill)
-        else:
-            st.info("No matched skills found.")
+                if result["matched"]:
+                    for skill in result["matched"]:
+                        st.success(skill)
+                else:
+                    st.info("No matched skills found.")
 
-    with col2:
-        st.subheader("❌ Missing Skills")
+            with col2:
+                st.subheader("❌ Missing Skills")
 
-        if result["missing"]:
-            for skill in result["missing"]:
-                st.error(skill)
-        else:
-            st.success("No missing skills!")
+                if result["missing"]:
+                    for skill in result["missing"]:
+                        st.error(skill)
+                else:
+                    st.success("No missing skills!")
 
-# ==========================================
-# AI Insights
-# ==========================================
-with tab2:
+        # ==========================================
+        # AI Insights
+        # ==========================================
+        with tab2:
 
-    st.subheader("🤖 AI Career Suggestions")
-    st.info(gemini_output)
+            st.subheader("🤖 AI Career Suggestions")
+            st.info(gemini_output)
 
-# ==========================================
-# Cover Letter
-# ==========================================
-with tab3:
+        # ==========================================
+        # Cover Letter
+        # ==========================================
+        with tab3:
 
-    st.text_area(
-        "Generated Cover Letter",
-        result["cover_letter"],
-        height=300
-    )
+            st.text_area(
+                "Generated Cover Letter",
+                result["cover_letter"],
+                height=300
+            )
 
-    st.download_button(
-        "📥 Download Cover Letter",
-        data=result["cover_letter"],
-        file_name="cover_letter.txt"
-    )
+            st.download_button(
+                "📥 Download Cover Letter",
+                data=result["cover_letter"],
+                file_name="cover_letter.txt"
+            )
 
-# ==========================================
-# LinkedIn
-# ==========================================
-with tab4:
+        # ==========================================
+        # LinkedIn
+        # ==========================================
+        with tab4:
 
-    st.text_area(
-        "LinkedIn Summary",
-        result["linkedin_summary"],
-        height=250
-    )
+            st.text_area(
+                "LinkedIn Summary",
+                result["linkedin_summary"],
+                height=250
+            )
 
-# ==========================================
-# Interview Questions
-# ==========================================
-with tab5:
+        # ==========================================
+        # Interview Questions
+        # ==========================================
+        with tab5:
 
-    for i, question in enumerate(result["interview_questions"], 1):
+            for i, question in enumerate(result["interview_questions"], 1):
 
-        with st.expander(f"Question {i}", expanded=(i == 1)):
-            st.write(question)
+                with st.expander(f"Question {i}", expanded=(i == 1)):
+                    st.write(question)
 
-# ==========================================
-# PDF REPORT
-# ==========================================
-pdf_path = "resume_report.pdf"
+        # ==========================================
+        # PDF REPORT
+        # ==========================================
+        pdf_path = "resume_report.pdf"
 
-generate_pdf(
-    pdf_path,
-    result["score"],
-    result["matched"],
-    result["missing"],
-    result["cover_letter"],
-    result["linkedin_summary"],
-    gemini_output,
-)
+        generate_pdf(
+            pdf_path,
+            result["score"],
+            result["matched"],
+            result["missing"],
+            result["cover_letter"],
+            result["linkedin_summary"],
+            gemini_output,
+        )
 
-with open(pdf_path, "rb") as pdf_file:
-    st.download_button(
-        "📥 Download Full AI Report (PDF)",
-        data=pdf_file,
-        file_name="AI_Resume_Report.pdf",
-        mime="application/pdf",
-    )
+        with open(pdf_path, "rb") as pdf_file:
+            st.download_button(
+                "📥 Download Full AI Report (PDF)",
+                data=pdf_file,
+                file_name="AI_Resume_Report.pdf",
+                mime="application/pdf",
+            )
 
-# ==========================================
-# SAVE ANALYSIS
-# ==========================================
-if st.button("💾 Save Analysis", use_container_width=True):
+        # ==========================================
+        # SAVE ANALYSIS
+        # ==========================================
+        if st.button("💾 Save Analysis", use_container_width=True):
 
-    save_analysis(
-        user_email=st.session_state.user_email,
-        resume_text=resume_text,
-        job_description=job_description,
-        ats_score=result["score"],
-        matched_skills=result["matched"],
-        missing_skills=result["missing"],
-        cover_letter=result["cover_letter"],
-        linkedin_summary=result["linkedin_summary"],
-        ai_insights=gemini_output,
-    )
+            save_analysis(
+                user_email=st.session_state.user_email,
+                resume_text=resume_text,
+                job_description=job_description,
+                ats_score=result["score"],
+                matched_skills=result["matched"],
+                missing_skills=result["missing"],
+                cover_letter=result["cover_letter"],
+                linkedin_summary=result["linkedin_summary"],
+                ai_insights=gemini_output,
+            )
 
-    increment_usage(st.session_state.user_email)
+            increment_usage(st.session_state.user_email)
 
-    st.success("✅ Analysis saved successfully!")
+            st.success("✅ Analysis saved successfully!")
 
 
     st.button("Logout", on_click=logout)
