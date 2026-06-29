@@ -63,22 +63,52 @@ def logout():
 # DASHBOARD
 # ==================================================
 def dashboard():
+    st.info(
+    """
+    ### 👋 Welcome to CareerPilot AI
+
+    Your personal AI career assistant.
+
+    ✔ Resume Analysis
+
+    ✔ ATS Optimization
+
+    ✔ Interview Coach
+
+    ✔ Career Roadmaps
+
+    ✔ AI Copilot
+    """
+    )
     reset_daily_usage_if_needed(st.session_state.user_email)
 
-    st.subheader("📊 Dashboard")
+    st.markdown("# 🚀 Dashboard")
+
+    st.caption("Welcome back to CareerPilot AI")
+
+    st.divider()
 
     stats = get_dashboard_stats(st.session_state.user_email)
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Total Analyses", stats.get("total", 0))
+        st.metric(
+            "📄 Total Analyses",
+            stats.get("total", 0)
+        )
 
     with col2:
-        st.metric("Average ATS Score", stats.get("avg_score", 0))
+        st.metric(
+            "⭐ Average ATS",
+            f"{stats.get('avg_score',0)}%"
+        )
 
     with col3:
-        st.metric("Best ATS Score", stats.get("max_score", 0))
+        st.metric(
+            "🏆 Best Score",
+            f"{stats.get('max_score',0)}%"
+        )
 
     history = get_user_history(st.session_state.user_email)
 
@@ -101,8 +131,20 @@ def resume_analysis():
 
     reset_daily_usage_if_needed(st.session_state.user_email)
 
-    uploaded_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
-    job_description = st.text_area("Paste Job Description")
+    st.markdown("## 📄 Resume Analyzer")
+    st.caption("Upload your resume and compare it with a Job Description using AI.")
+
+    uploaded_file = st.file_uploader(
+        "📂 Upload Resume (PDF)",
+        type=["pdf"]
+    )
+
+    job_description = st.text_area(
+        "💼 Paste Job Description",
+        height=180,
+        placeholder="Paste the complete Job Description here..."
+    )
+
 
     if uploaded_file and job_description.strip():
 
@@ -124,69 +166,154 @@ def resume_analysis():
         st.subheader("Gemini AI Insights")
         st.markdown(gemini_output)
 
-        st.subheader("ATS Score")
-        st.progress(int(result["score"]))
-        st.write(f"{result['score']} / 100")
+        score = int(result["score"])
 
-        st.subheader("Matched Skills")
-        st.write(result["matched"])
+        st.divider()
 
-        st.subheader("Missing Skills")
-        st.write(result["missing"])
+        st.markdown("## ⭐ Resume Match Score")
 
-        st.subheader("Cover Letter")
-        st.text_area("Cover Letter", result["cover_letter"], height=200)
+        col1, col2, col3 = st.columns(3)
 
-        st.download_button(
-            "Download Cover Letter",
-            data=result["cover_letter"],
-            file_name="cover_letter.txt"
-        )
+        with col1:
+            st.metric("Overall ATS Score", f"{score}/100")
 
-        st.subheader("Interview Questions")
-        for i, q in enumerate(result["interview_questions"]):
-            st.write(f"{i+1}. {q}")
+        with col2:
+            if score >= 80:
+                st.success("Excellent Match")
+            elif score >= 60:
+                st.warning("Good Match")
+            else:
+                st.error("Needs Improvement")
 
-        st.subheader("LinkedIn Summary")
-        st.text_area("LinkedIn Summary", result["linkedin_summary"], height=150)
+        with col3:
+            st.metric("Matched Skills", len(result["matched"]))
 
-        pdf_path = "resume_report.pdf"
+        st.progress(score / 100)
+# ==========================================
+# TABS
+# ==========================================
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📊 Skills",
+    "🤖 AI Insights",
+    "📝 Cover Letter",
+    "💼 LinkedIn",
+    "🎤 Interview"
+])
 
-        generate_pdf(
-            pdf_path,
-            result["score"],
-            result["matched"],
-            result["missing"],
-            result["cover_letter"],
-            result["linkedin_summary"],
-            gemini_output,
-        )
+# ==========================================
+# Skills
+# ==========================================
+with tab1:
 
-        with open(pdf_path, "rb") as pdf_file:
-            st.download_button(
-                "Download AI Report (PDF)",
-                data=pdf_file,
-                file_name="AI_Resume_Report.pdf",
-                mime="application/pdf",
-            )
+    col1, col2 = st.columns(2)
 
-        if st.button("💾 Save Analysis"):
+    with col1:
+        st.subheader("✅ Matched Skills")
 
-            save_analysis(
-                user_email=st.session_state.user_email,
-                resume_text=resume_text,
-                job_description=job_description,
-                ats_score=result["score"],
-                matched_skills=result["matched"],
-                missing_skills=result["missing"],
-                cover_letter=result["cover_letter"],
-                linkedin_summary=result["linkedin_summary"],
-                ai_insights=gemini_output,
-            )
+        if result["matched"]:
+            for skill in result["matched"]:
+                st.success(skill)
+        else:
+            st.info("No matched skills found.")
 
-            increment_usage(st.session_state.user_email)
+    with col2:
+        st.subheader("❌ Missing Skills")
 
-            st.success("Saved successfully!")
+        if result["missing"]:
+            for skill in result["missing"]:
+                st.error(skill)
+        else:
+            st.success("No missing skills!")
+
+# ==========================================
+# AI Insights
+# ==========================================
+with tab2:
+
+    st.subheader("🤖 AI Career Suggestions")
+    st.info(gemini_output)
+
+# ==========================================
+# Cover Letter
+# ==========================================
+with tab3:
+
+    st.text_area(
+        "Generated Cover Letter",
+        result["cover_letter"],
+        height=300
+    )
+
+    st.download_button(
+        "📥 Download Cover Letter",
+        data=result["cover_letter"],
+        file_name="cover_letter.txt"
+    )
+
+# ==========================================
+# LinkedIn
+# ==========================================
+with tab4:
+
+    st.text_area(
+        "LinkedIn Summary",
+        result["linkedin_summary"],
+        height=250
+    )
+
+# ==========================================
+# Interview Questions
+# ==========================================
+with tab5:
+
+    for i, question in enumerate(result["interview_questions"], 1):
+
+        with st.expander(f"Question {i}", expanded=(i == 1)):
+            st.write(question)
+
+# ==========================================
+# PDF REPORT
+# ==========================================
+pdf_path = "resume_report.pdf"
+
+generate_pdf(
+    pdf_path,
+    result["score"],
+    result["matched"],
+    result["missing"],
+    result["cover_letter"],
+    result["linkedin_summary"],
+    gemini_output,
+)
+
+with open(pdf_path, "rb") as pdf_file:
+    st.download_button(
+        "📥 Download Full AI Report (PDF)",
+        data=pdf_file,
+        file_name="AI_Resume_Report.pdf",
+        mime="application/pdf",
+    )
+
+# ==========================================
+# SAVE ANALYSIS
+# ==========================================
+if st.button("💾 Save Analysis", use_container_width=True):
+
+    save_analysis(
+        user_email=st.session_state.user_email,
+        resume_text=resume_text,
+        job_description=job_description,
+        ats_score=result["score"],
+        matched_skills=result["matched"],
+        missing_skills=result["missing"],
+        cover_letter=result["cover_letter"],
+        linkedin_summary=result["linkedin_summary"],
+        ai_insights=gemini_output,
+    )
+
+    increment_usage(st.session_state.user_email)
+
+    st.success("✅ Analysis saved successfully!")
 
 
     st.button("Logout", on_click=logout)
@@ -322,40 +449,42 @@ if st.session_state.user:
     if st.sidebar.button("Logout"):
         logout()
 
-    page = st.sidebar.radio(
-        "Navigation",
-        [
-            "Dashboard",
-            "Resume Analysis",
-            "Job Matcher",
-            "Interview Coach",
-            "Career Coach",
-            "Analysis History",
-            "Pricing"
-        ]
-    )
+        st.sidebar.markdown("## 🚀 CareerPilot AI")
 
-    if page == "Dashboard":
-        dashboard()
+        st.sidebar.success(f"👤 {st.session_state.user_email}")
 
-    elif page == "Resume Analysis":
-        resume_analysis()
+        st.sidebar.divider()
 
-    elif page == "Job Matcher":
-        job_matcher()
+        page = st.sidebar.radio(
+                "📂 Navigation",
+            [
+                "🏠 Dashboard",
+                "📄 Resume Analyzer",
+                "📊 Analysis History",
+                "🤖 AI Copilot",
+                "💰 Pricing",
+                "⚙ Settings"
+            ]
+        )
 
-    elif page == "Interview Coach":
-        interview_coach()
+        if page == "🏠 Dashboard":
+            dashboard()
 
-    elif page == "Career Coach":
-        career_coach()
+        elif page == "📄 Resume Analyzer":
+            resume_analysis()
 
-    elif page == "Analysis History":
-        analysis_history()
+        elif page == "📊 Analysis History":
+            analysis_history()
 
-    elif page == "Pricing":
+        elif page == "🤖 AI Copilot":
+            st.switch_page("pages/AI_Copilot.py")
 
-        col1, col2, col3 = st.columns(3)
+        elif page == "⚙ Settings":
+            st.switch_page("pages/Settings.py")
+
+        elif page == "💰 Pricing":
+
+            col1, col2, col3 = st.columns(3)
 
         # ================= FREE =================
         with col1:
