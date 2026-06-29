@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import streamlit.components.v1 as components
-from pages.Resume_Analyzer import resume_analysis
+from pages.resume_analyzer import resume_analysis
 
 from firebase_config import auth
 from pdf_utils import extract_text_from_pdf
