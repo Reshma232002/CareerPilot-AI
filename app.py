@@ -349,6 +349,14 @@ def login_signup():
 
 def render_login_page():
 
+    st.markdown(
+        """
+        <div class="login-wrapper">
+        """,
+        unsafe_allow_html=True
+    )
+
+
     left, right = st.columns(
         [1.1,0.9],
         gap="large"
@@ -443,34 +451,29 @@ def render_login_page():
             )
 
 
-
-
-    # ==========================
+    # ==============================
     # RIGHT SIDE
-    # ==========================
-
+    # ==============================
 
     with right:
 
         st.markdown(
-                """
-                <div class="login-card-wrapper">
-                """,
-                unsafe_allow_html=True
+            """
+            <div class="login-spacer"></div>
+            """,
+            unsafe_allow_html=True
         )
-
 
 
         with st.container(border=True):
 
-
             st.markdown(
             """
-            <h2 style="text-align:center">
+            <h2 style="text-align:center;">
             Welcome Back
             </h2>
 
-            <p style="text-align:center">
+            <p style="text-align:center;">
             Sign in to continue your career journey.
             </p>
             """,
@@ -479,6 +482,7 @@ def render_login_page():
 
 
             login_signup()
+
 
 
 
@@ -843,5 +847,5 @@ if st.session_state.user:
 # ==================================================
 
 else:
-    render_login_page()      
+    render_login_page()
 
