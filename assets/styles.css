@@ -1302,5 +1302,37 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 
 }
 .login-card-wrapper {
-    padding-top:180px !important;
+    padding-top:200px !important;
+}
+/* =====================================================
+   FINAL LOGIN CARD POSITION FIX
+   Keep right card slightly lower
+   ===================================================== */
+
+
+.login-card-wrapper {
+    padding-top: 70px !important;
+    transform: translateY(0) !important;
+}
+
+
+/* Keep left brand untouched */
+.brand-section {
+    transform: none !important;
+}
+
+
+/* Prevent Streamlit column alignment override */
+[data-testid="stHorizontalBlock"]:has(.login-card-wrapper) {
+    align-items: flex-start !important;
+}
+/* ==========================================
+   FINAL LOGIN CARD LOWER POSITION
+   ========================================== */
+/* ==========================================
+   FINAL LOGIN CARD POSITION
+   ========================================== */
+
+.login-spacer {
+    height: 180px !important;
 }
