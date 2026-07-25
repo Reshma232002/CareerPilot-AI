@@ -8,7 +8,6 @@ import streamlit as st
 from firebase_config import auth
 
 
-
 # ==================================================
 # MODULE IMPORTS
 # ==================================================
