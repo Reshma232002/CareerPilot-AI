@@ -843,10 +843,5 @@ if st.session_state.user:
 # ==================================================
 
 else:
-
-
-<<<<<<< HEAD
     render_login_page()      
-=======
-    render_login_page()      
->>>>>>> 1de7b0fb7952d677d035cf8540a3f052596ac2a1
+
