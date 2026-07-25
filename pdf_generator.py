@@ -1,3 +1,5 @@
+
+
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
@@ -10,6 +12,7 @@ def generate_pdf(
     cover_letter,
     linkedin_summary,
     ai_insights,
+    candidate_email=None,
 ):
     doc = SimpleDocTemplate(filename)
     styles = getSampleStyleSheet()
@@ -24,18 +27,41 @@ def generate_pdf(
     )
     story.append(Spacer(1, 12))
 
-    story.append(
-        Paragraph(
-            f"<b>Matched Skills:</b> {', '.join(matched_skills)}",
-            styles["Normal"],
+    if candidate_email:
+        story.append(
+            Paragraph(
+                f"<b>Candidate Email:</b> {candidate_email}",
+                styles["Normal"]
+            )
         )
-    )
     story.append(Spacer(1, 12))
 
+
+    matched = (
+            ", ".join(matched_skills)
+            if isinstance(matched_skills, list)
+            else str(matched_skills)
+        )
+
     story.append(
-        Paragraph(
-            f"<b>Missing Skills:</b> {', '.join(missing_skills)}",
-            styles["Normal"],
+            Paragraph(
+                f"<b>Matched Skills:</b> {matched}",
+                styles["Normal"],
+            )
+        )
+    
+    story.append(Spacer(1, 12))
+
+    missing = (
+    ", ".join(missing_skills)
+    if isinstance(missing_skills, list)
+    else str(missing_skills)
+    )
+
+    story.append(
+    Paragraph(
+        f"<b>Missing Skills:</b> {missing}",
+        styles["Normal"],
         )
     )
     story.append(Spacer(1, 12))

@@ -1,74 +1,65 @@
 import google.generativeai as genai
-import os
+import streamlit as st
 
-# ==================================================
-# GEMINI CONFIGURATION
-# ==================================================
+# Configure Gemini
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-API_KEY = os.getenv("GEMINI_API_KEY")
-
-if API_KEY:
-    genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-else:
-    model = None
+# Gemini Model
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 
-# ==================================================
-# GENERATE AI CONTENT
-# ==================================================
+def generate_ai_content(prompt, job_description=None):
+    """
+    If only 'prompt' is passed:
+        - Used by AI Copilot, Career Planner, etc.
 
-def generate_ai_content(resume_text, job_description):
-
-    # If API key is missing
-    if model is None:
-        return """
-⚠️ Gemini API Key Not Found
-
-Please set:
-
-GEMINI_API_KEY
-
-Environment variable before running the application.
-"""
-
-    prompt = f"""
-You are an expert ATS Resume Analyzer.
-
-Compare the resume and job description.
-
-Provide:
-
-1. ATS Score
-2. Matched Skills
-3. Missing Skills
-4. Cover Letter
-5. LinkedIn Summary
-6. Interview Questions
-
-RESUME:
-{resume_text}
-
-JOB DESCRIPTION:
-{job_description}
-"""
+    If 'prompt' and 'job_description' are passed:
+        - Used by Resume Analyzer.
+    """
 
     try:
 
-        response = model.generate_content(prompt)
+        # Resume Analyzer
+        if job_description is not None:
 
-        if hasattr(response, "text"):
+            final_prompt = f"""
+You are an expert ATS Resume Reviewer.
+
+Analyze the following resume against the job description.
+
+Resume:
+{prompt}
+
+Job Description:
+{job_description}
+
+Provide:
+
+# Overall Analysis
+
+# Strengths
+
+# Weaknesses
+
+# Missing Skills
+
+# Resume Improvement Suggestions
+
+# ATS Optimization Tips
+
+# Final Recommendation
+"""
+
+        else:
+            # AI Copilot / Career Planner / Others
+            final_prompt = prompt
+
+        response = model.generate_content(final_prompt)
+
+        if response.parts:
             return response.text
 
-        return "No AI response generated."
+        return "No response generated."
 
     except Exception as e:
-
-        return f"""
-⚠️ Gemini API Error
-
-Reason:
-{str(e)}
-
-ATS analysis will still work normally.
-"""
+        return f"Gemini Exception:\n{e}"

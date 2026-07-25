@@ -1,459 +1,848 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-import streamlit.components.v1 as components
+
+
+# ==================================================
+# FIREBASE AUTH
+# ==================================================
 
 from firebase_config import auth
-from pdf_utils import extract_text_from_pdf
-from ai_engine import analyze_resume
-from gemini_engine import generate_ai_content
-from pdf_generator import generate_pdf
-from user_plan import can_use_service
+
+
+
+# ==================================================
+# MODULE IMPORTS
+# ==================================================
+
+from modules.dashboard import dashboard
+from modules.resume_analyzer import resume_analysis
+from modules.analysis_history import analysis_history
+from modules.pricing import pricing
+from modules.job_matcher import job_matcher
+from modules.interview_coach import interview_coach
+from modules.career_planner import career_planner
+from modules.ai_copilot import ai_copilot
+from modules.settings import settings
+from modules.career_dna import career_dna
+from modules.learning_roadmap import learning_roadmap
+from modules.skill_gap import skill_gap
+from modules.resume_builder import resume_builder
+from modules.admin_dashboard import admin_dashboard
+from modules.recruiter_dashboard import recruiter_dashboard
+from modules.job_tracker import job_tracker
+from modules.application_tracker import application_tracker
+from modules.profile import profile
+from modules.notifications import notifications
+
+
+
+# ==================================================
+# SERVICES
+# ==================================================
+
+from email_utils import send_welcome_email
+
+
 from backend_db import (
-    increment_usage,
-    save_analysis,
-    get_user_history,
-    get_dashboard_stats,
-    reset_daily_usage_if_needed,
-    create_user_if_not_exists
+    create_user_if_not_exists,
+    update_last_login,
+    get_user_profile,
+    add_notification,
+    get_unread_notification_count
 )
 
-from payment import create_order, verify_payment, upgrade_user
 
 
 # ==================================================
 # PAGE CONFIG
 # ==================================================
+
 st.set_page_config(
+
     page_title="CareerPilot AI",
-    page_icon="🚀",
-    layout="wide"
+
+    page_icon="assets/logos/favicon.png",
+
+    layout="wide",
+
+    initial_sidebar_state="expanded"
+
 )
 
-st.title("🚀 CareerPilot AI")
-st.caption("Your AI Career Company")
+
+
+# ==================================================
+# LOAD CSS
+# ==================================================
+
+try:
+
+    with open(
+        "assets/styles.css",
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+
+        st.markdown(
+
+            f"""
+            <style>
+            {file.read()}
+            </style>
+            """,
+
+            unsafe_allow_html=True
+
+        )
+
+
+except Exception:
+
+    pass
+
+
+
+
 # ==================================================
 # SESSION STATE
 # ==================================================
+
 if "user" not in st.session_state:
+
     st.session_state.user = None
 
+
 if "user_email" not in st.session_state:
+
     st.session_state.user_email = ""
 
+
 if "premium_order" not in st.session_state:
+
     st.session_state.premium_order = None
 
+
 if "recruiter_order" not in st.session_state:
+
     st.session_state.recruiter_order = None
+
+
 
 
 # ==================================================
 # LOGOUT
 # ==================================================
+
 def logout():
+
     st.session_state.user = None
+
     st.session_state.user_email = ""
+
     st.session_state.premium_order = None
+
     st.session_state.recruiter_order = None
+
+
     st.rerun()
 
 
-# ==================================================
-# DASHBOARD
-# ==================================================
-def dashboard():
-    reset_daily_usage_if_needed(st.session_state.user_email)
 
-    st.subheader("📊 Dashboard")
-
-    stats = get_dashboard_stats(st.session_state.user_email)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric("Total Analyses", stats.get("total", 0))
-
-    with col2:
-        st.metric("Average ATS Score", stats.get("avg_score", 0))
-
-    with col3:
-        st.metric("Best ATS Score", stats.get("max_score", 0))
-
-    history = get_user_history(st.session_state.user_email)
-
-    if history:
-        df = pd.DataFrame([
-            {"Analysis": i + 1, "ATS Score": item.get("ats_score", 0)}
-            for i, item in enumerate(history)
-        ])
-
-        fig = px.line(df, x="Analysis", y="ATS Score", markers=True)
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No analyses yet.")
 
 
 # ==================================================
-# RESUME ANALYSIS
+# AUTHENTICATION
 # ==================================================
-def resume_analysis():
 
-    reset_daily_usage_if_needed(st.session_state.user_email)
-
-    uploaded_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
-    job_description = st.text_area("Paste Job Description")
-
-    if uploaded_file and job_description.strip():
-
-        allowed, message = can_use_service(st.session_state.user_email)
-
-        if not allowed:
-            st.error(message)
-            st.stop()
-
-        resume_text = extract_text_from_pdf(uploaded_file)
-
-        st.subheader("Extracted Resume")
-        st.text_area("Resume Text", resume_text, height=250)
-
-        result = analyze_resume(resume_text, job_description)
-
-        gemini_output = generate_ai_content(resume_text, job_description)
-
-        st.subheader("Gemini AI Insights")
-        st.markdown(gemini_output)
-
-        st.subheader("ATS Score")
-        st.progress(int(result["score"]))
-        st.write(f"{result['score']} / 100")
-
-        st.subheader("Matched Skills")
-        st.write(result["matched"])
-
-        st.subheader("Missing Skills")
-        st.write(result["missing"])
-
-        st.subheader("Cover Letter")
-        st.text_area("Cover Letter", result["cover_letter"], height=200)
-
-        st.download_button(
-            "Download Cover Letter",
-            data=result["cover_letter"],
-            file_name="cover_letter.txt"
-        )
-
-        st.subheader("Interview Questions")
-        for i, q in enumerate(result["interview_questions"]):
-            st.write(f"{i+1}. {q}")
-
-        st.subheader("LinkedIn Summary")
-        st.text_area("LinkedIn Summary", result["linkedin_summary"], height=150)
-
-        pdf_path = "resume_report.pdf"
-
-        generate_pdf(
-            pdf_path,
-            result["score"],
-            result["matched"],
-            result["missing"],
-            result["cover_letter"],
-            result["linkedin_summary"],
-            gemini_output,
-        )
-
-        with open(pdf_path, "rb") as pdf_file:
-            st.download_button(
-                "Download AI Report (PDF)",
-                data=pdf_file,
-                file_name="AI_Resume_Report.pdf",
-                mime="application/pdf",
-            )
-
-        if st.button("💾 Save Analysis"):
-
-            save_analysis(
-                user_email=st.session_state.user_email,
-                resume_text=resume_text,
-                job_description=job_description,
-                ats_score=result["score"],
-                matched_skills=result["matched"],
-                missing_skills=result["missing"],
-                cover_letter=result["cover_letter"],
-                linkedin_summary=result["linkedin_summary"],
-                ai_insights=gemini_output,
-            )
-
-            increment_usage(st.session_state.user_email)
-
-            st.success("Saved successfully!")
-
-
-    st.button("Logout", on_click=logout)
-
-# ==================================================
-# JOB MATCHER
-# ==================================================
-def job_matcher():
-
-    st.subheader("🎯 Job Matcher")
-
-    st.info("Coming Soon")
-
-    st.write(
-        """
-        Future Features:
-        - Match resume with jobs
-        - ATS compatibility
-        - Skill gap analysis
-        - AI recommendations
-        """
-    )
-# ==================================================
-# INTERVIEW COACH
-# ==================================================
-def interview_coach():
-
-    st.subheader("🎤 Interview Coach")
-
-    st.info("Coming Soon")
-
-    st.write(
-        """
-        Future Features:
-        - Mock interviews
-        - Technical questions
-        - HR questions
-        - AI feedback
-        """
-    )
-# ==================================================
-# CAREER COACH
-# ==================================================
-def career_coach():
-
-    st.subheader("🚀 Career Coach")
-
-    st.info("Coming Soon")
-
-    st.write(
-        """
-        Future Features:
-        - Career roadmap
-        - Skill recommendations
-        - Salary guidance
-        - Learning path generation
-        """
-    )        
-# ==================================================
-# HISTORY
-# ==================================================
-def analysis_history():
-
-    st.subheader("Previous Analyses")
-
-    history = get_user_history(st.session_state.user_email)
-
-    if history:
-        for i, item in enumerate(history, 1):
-
-            with st.expander(f"Analysis {i} | ATS: {item.get('ats_score', 0)}"):
-
-                st.metric("ATS Score", f"{item.get('ats_score', 0)} / 100")
-                st.write("Matched:", item.get("matched_skills", []))
-                st.write("Missing:", item.get("missing_skills", []))
-
-                st.text_area("Cover Letter", item.get("cover_letter", ""), key=f"cl_{i}")
-                st.text_area("LinkedIn", item.get("linkedin_summary", ""), key=f"li_{i}")
-
-                st.markdown(item.get("ai_insights", ""))
-
-    else:
-        st.info("No saved analyses.")
-
-
-# ==================================================
-# LOGIN / SIGNUP
-# ==================================================
 def login_signup():
 
-    menu = st.sidebar.selectbox("Menu", ["Login", "Sign Up"])
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    auth_mode = st.radio(
 
-    if menu == "Sign Up":
+        "Account",
 
-        if st.button("Sign Up"):
+        [
+            "Login",
+            "Create Account"
+        ],
+
+        horizontal=True
+
+    )
+
+
+    email = st.text_input(
+
+        "Email Address",
+
+        placeholder="Enter your email"
+
+    )
+
+
+    password = st.text_input(
+
+        "Password",
+
+        type="password",
+
+        placeholder="Enter your password"
+
+    )
+
+
+
+    st.write("")
+
+
+
+    if auth_mode == "Create Account":
+
+
+        if st.button(
+
+            "Create Account",
+
+            use_container_width=True
+
+        ):
+
+
             try:
-                auth.create_user_with_email_and_password(email, password)
-                create_user_if_not_exists(email)
-                st.success("Account created!")
+
+
+                with st.spinner(
+
+                    "Creating account..."
+
+                ):
+
+
+                    user = auth.create_user_with_email_and_password(
+
+                        email,
+
+                        password
+
+                    )
+
+
+                    auth.send_email_verification(
+
+                        user["idToken"]
+
+                    )
+
+
+                    create_user_if_not_exists(
+
+                        email
+
+                    )
+
+
+                    add_notification(
+
+                        email,
+
+                        "Welcome to CareerPilot AI",
+
+                        "Your account has been created successfully."
+
+                    )
+
+
+                    email_sent = send_welcome_email(
+
+                        email
+
+                    )
+
+
+
+                if email_sent:
+
+
+                    st.success(
+
+                        "Account created successfully."
+
+                    )
+
+
+                else:
+
+
+                    st.warning(
+
+                        "Account created but email could not be sent."
+
+                    )
+
+
+
             except Exception as e:
+
+
                 st.error(e)
+
+
+
+
 
     else:
 
-        if st.button("Login"):
+
+        if st.button(
+
+            "Sign In",
+
+            use_container_width=True
+
+        ):
+
+
             try:
-                user = auth.sign_in_with_email_and_password(email, password)
 
-                st.session_state.user = user
-                st.session_state.user_email = email
 
-                create_user_if_not_exists(email)
+                with st.spinner(
 
-                st.success("Login successful!")
+                    "Signing in..."
+
+                ):
+
+
+                    user = auth.sign_in_with_email_and_password(
+
+                        email,
+
+                        password
+
+                    )
+
+
+                    st.session_state.user = user
+
+
+                    st.session_state.user_email = email
+
+
+                    update_last_login(
+
+                        email
+
+                    )
+
+
                 st.rerun()
 
-            except Exception as e:
-                st.error(f"Login failed: {str(e)}")
 
 
-# ==================================================
-# MAIN APP
-# ==================================================
-if st.session_state.user:
+            except Exception:
 
-    st.success(f"Logged in as: {st.session_state.user_email}")
 
-    if st.sidebar.button("Logout"):
-        logout()
+                st.error(
 
-    page = st.sidebar.radio(
-        "Navigation",
-        [
-            "Dashboard",
-            "Resume Analysis",
-            "Job Matcher",
-            "Interview Coach",
-            "Career Coach",
-            "Analysis History",
-            "Pricing"
-        ]
+                    "Invalid email or password."
+
+                )
+
+def render_login_page():
+
+    left, right = st.columns(
+        [1.1,0.9],
+        gap="large"
     )
 
+
+    # ==========================
+    # LEFT SIDE
+    # ==========================
+
+    with left:
+
+
+        logo_col, name_col = st.columns(
+            [0.25,0.75],
+            gap="small"
+        )
+
+
+        with logo_col:
+
+            st.image(
+                "assets/logos/logo.png",
+                width=120
+            )
+
+
+        with name_col:
+
+            st.image(
+                "assets/logos/wordmark.png",
+                width=320
+            )
+
+
+
+        st.markdown(
+            """
+            <h1>
+            AI-Powered Career Intelligence Platform
+            </h1>
+
+            <p>
+            Build better resumes, improve ATS scores,
+            prepare for interviews, and accelerate your
+            career growth with artificial intelligence.
+            </p>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        c1,c2 = st.columns(2)
+
+
+        with c1:
+
+            st.info(
+            """
+            **Resume Intelligence**
+
+            AI-powered resume analysis and optimization.
+            """
+            )
+
+            st.info(
+            """
+            **Career Growth**
+
+            Personalized career planning and roadmap.
+            """
+            )
+
+
+        with c2:
+
+            st.info(
+            """
+            **ATS Optimization**
+
+            Improve resume ranking for recruiters.
+            """
+            )
+
+
+            st.info(
+            """
+            **AI Copilot**
+
+            Your personal career assistant.
+            """
+            )
+
+
+
+
+    # ==========================
+    # RIGHT SIDE
+    # ==========================
+
+
+    with right:
+
+        st.markdown(
+                """
+                <div class="login-card-wrapper">
+                """,
+                unsafe_allow_html=True
+        )
+
+
+
+        with st.container(border=True):
+
+
+            st.markdown(
+            """
+            <h2 style="text-align:center">
+            Welcome Back
+            </h2>
+
+            <p style="text-align:center">
+            Sign in to continue your career journey.
+            </p>
+            """,
+            unsafe_allow_html=True
+            )
+
+
+            login_signup()
+
+
+
+    st.markdown(
+    """
+    <div class="footer">
+    CareerPilot AI v1.0
+    <br>
+    © 2026 CareerPilot AI
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+# ==================================================
+# MAIN APPLICATION
+# ==================================================
+
+if st.session_state.user:
+
+
+
+    # ==================================================
+    # SIDEBAR
+    # ==================================================
+
+    with st.sidebar:
+
+
+
+        st.image(
+
+            "assets/logos/logo.png",
+
+            width=80
+
+        )
+
+
+        st.image(
+
+            "assets/logos/wordmark.png",
+
+            width=180
+
+        )
+
+
+
+        st.caption(
+
+            "AI Resume Intelligence Platform"
+
+        )
+
+
+
+        st.divider()
+
+
+
+        # ----------------------------------------------
+        # USER PROFILE
+        # ----------------------------------------------
+
+
+        user_profile = get_user_profile(
+
+            st.session_state.user_email
+
+        )
+
+
+
+        profile_image = user_profile.get(
+
+            "profile_image",
+
+            ""
+
+        )
+
+
+
+        full_name = user_profile.get(
+
+            "full_name",
+
+            "User"
+
+        )
+
+
+
+        if profile_image:
+
+
+            try:
+
+
+                st.image(
+
+                    profile_image,
+
+                    width=90
+
+                )
+
+
+            except Exception:
+
+
+                pass
+
+
+
+
+        st.markdown(
+
+            f"""
+
+            ### {full_name}
+
+
+            <small>
+
+            {st.session_state.user_email}
+
+            </small>
+
+            """,
+
+            unsafe_allow_html=True
+
+        )
+
+
+
+        unread_count = get_unread_notification_count(
+
+            st.session_state.user_email
+
+        )
+
+
+
+        if unread_count > 0:
+
+
+            notification_label = (
+
+                f"Notifications ({unread_count})"
+
+            )
+
+
+        else:
+
+
+            notification_label = "Notifications"
+
+
+
+
+
+        st.divider()
+
+
+
+        # ----------------------------------------------
+        # NAVIGATION
+        # ----------------------------------------------
+
+
+        page = st.radio(
+
+            "Navigation",
+
+            [
+
+                "Dashboard",
+
+                notification_label,
+
+                "My Profile",
+
+                "Resume Review",
+
+                "Career Planner",
+
+                "Career Assessment",
+
+                "Learning Roadmap",
+
+                "Job Matcher",
+
+                "Interview Coach",
+
+                "Skill Gap Analyzer",
+
+                "Resume Builder",
+
+                "Admin Console",
+
+                "Recruiter Portal",
+
+                "Job Applications",
+
+                "Application Tracker",
+
+                "Reports",
+
+                "AI Copilot",
+
+                "Pricing",
+
+                "Settings"
+
+            ]
+
+        )          
+
+                # ==================================================
+        # LOGOUT BUTTON
+        # ==================================================
+
+        st.divider()
+
+
+        if st.button(
+
+            "Logout",
+
+            use_container_width=True
+
+        ):
+
+            logout()
+
+
+
+    # ==================================================
+    # PAGE ROUTING
+    # ==================================================
+
     if page == "Dashboard":
+
         dashboard()
 
-    elif page == "Resume Analysis":
+
+
+    elif page.startswith("Notifications"):
+
+        notifications()
+
+
+
+    elif page == "My Profile":
+
+        profile()
+
+
+
+    elif page == "Resume Review":
+
         resume_analysis()
 
+
+
+    elif page == "Career Planner":
+
+        career_planner()
+
+
+
+    elif page == "Career Assessment":
+
+        career_dna()
+
+
+
+    elif page == "Learning Roadmap":
+
+        learning_roadmap()
+
+
+
     elif page == "Job Matcher":
+
         job_matcher()
 
+
+
     elif page == "Interview Coach":
+
         interview_coach()
 
-    elif page == "Career Coach":
-        career_coach()
 
-    elif page == "Analysis History":
+
+    elif page == "Skill Gap Analyzer":
+
+        skill_gap()
+
+
+
+    elif page == "Resume Builder":
+
+        resume_builder()
+
+
+
+    elif page == "Admin Console":
+
+        admin_dashboard()
+
+
+
+    elif page == "Recruiter Portal":
+
+        recruiter_dashboard()
+
+
+
+    elif page == "Job Applications":
+
+        job_tracker()
+
+
+
+    elif page == "Application Tracker":
+
+        application_tracker()
+
+
+
+    elif page == "Reports":
+
         analysis_history()
+
+
+
+    elif page == "AI Copilot":
+
+        ai_copilot()
+
+
 
     elif page == "Pricing":
 
-        col1, col2, col3 = st.columns(3)
+        pricing()
 
-        # ================= FREE =================
-        with col1:
-            st.info("Free: 1 analysis/day")
 
-        # ================= PREMIUM =================
-        with col2:
-            st.success("Premium ₹99/month")
 
-            if st.button("Pay ₹99 Premium"):
+    elif page == "Settings":
 
-                order = create_order(99)
+        settings()
 
-                st.session_state.premium_order = order["id"]
 
-                checkout_html = f"""
-                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-                <script>
-                var options = {{
-                    "key": "{st.secrets["RAZORPAY_KEY_ID"]}",
-                    "amount": "9900",
-                    "currency": "INR",
-                    "order_id": "{order['id']}",
-                    "handler": function (response) {{
-                        window.parent.postMessage(response, "*");
-                    }}
-                }};
-                var rzp = new Razorpay(options);
-                rzp.open();
-                </script>
-                """
 
-                components.html(checkout_html, height=600)
-
-            if st.session_state.premium_order:
-
-                st.write("Enter payment details:")
-
-                o = st.text_input("Order ID")
-                p = st.text_input("Payment ID")
-                s = st.text_input("Signature")
-
-                if st.button("Verify Premium Payment"):
-
-                    if verify_payment(o, p, s):
-                        upgrade_user(st.session_state.user_email, "premium")
-                        st.success("Premium Activated!")
-                        st.session_state.premium_order = None
-                        st.rerun()
-                    else:
-                        st.error("Payment failed")
-
-        # ================= RECRUITER =================
-        with col3:
-            st.warning("Recruiter ₹299/month")
-
-            if st.button("Pay ₹299 Recruiter"):
-
-                order = create_order(299)
-
-                st.session_state.recruiter_order = order["id"]
-
-                checkout_html = f"""
-                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
-                <script>
-                var options = {{
-                    "key": "{st.secrets["RAZORPAY_KEY_ID"]}",
-                    "amount": "29900",
-                    "currency": "INR",
-                    "order_id": "{order['id']}",
-                    "handler": function (response) {{
-                        window.parent.postMessage(response, "*");
-                    }}
-                }};
-                var rzp = new Razorpay(options);
-                rzp.open();
-                </script>
-                """
-
-                components.html(checkout_html, height=600)
-
-            if st.session_state.recruiter_order:
-
-                st.write("Enter payment details:")
-
-                o = st.text_input("Order ID Recruiter")
-                p = st.text_input("Payment ID Recruiter")
-                s = st.text_input("Signature Recruiter")
-
-                if st.button("Verify Recruiter Payment"):
-
-                    if verify_payment(o, p, s):
-                        upgrade_user(st.session_state.user_email, "recruiter")
-                        st.success("Recruiter Activated!")
-                        st.session_state.recruiter_order = None
-                        st.rerun()
-                    else:
-                        st.error("Payment failed")
+# ==================================================
+# NOT LOGGED IN
+# ==================================================
 
 else:
-    login_signup()
+
+
+    render_login_page()      
