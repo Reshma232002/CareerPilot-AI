@@ -132,13 +132,9 @@ def pricing():
                 if verify_payment(
                     order_id,
                     payment_id,
-                    signature    
+                    signature,
+                    st.session_state.user_email        
                 ):
-
-                    upgrade_user(
-                        st.session_state.user_email,
-                        "premium"
-                    )
 
                     st.success("🎉 Premium Activated!")
 
@@ -227,13 +223,9 @@ Everything in Premium +
                 if verify_payment(
                     order_id,
                     payment_id,
-                    signature
+                    signature,
+                    st.session_state.user_email
                 ):
-
-                    upgrade_user(
-                        st.session_state.user_email,
-                        "recruiter"
-                    )
 
                     st.success("🎉 Recruiter Activated!")
 
