@@ -1,13 +1,14 @@
 import pyrebase
 
 firebaseConfig = {
-    "apiKey": "AIzaSyCKz_o_Px7n9ng3iNzMI2mrShuHSIVEI3c",
-    "authDomain": "resume-ai-app-cbc0b.firebaseapp.com",
-    "projectId": "resume-ai-app-cbc0b",
-    "storageBucket": "resume-ai-app-cbc0b.firebasestorage.app",
-    "messagingSenderId": "732463770378",
-    "appId": "1:732463770378:web:7501b3e82c89be7ddd68f3",
+    "apiKey": "AIzaSyCIjE_dAgMtP_-MuZxORz0Zp6eAG2mfd-8",
+    "authDomain": "careerpilot-ai-prod.firebaseapp.com",
+    "projectId": "careerpilot-ai-prod",
+    "storageBucket": "careerpilot-ai-prod.firebasestorage.app",
+    "messagingSenderId": "1065454730693",
+    "appId": "1:1065454730693:web:9b00d272629c912a599fac",
     "databaseURL": ""
+
 }
 
 firebase = pyrebase.initialize_app(firebaseConfig)
