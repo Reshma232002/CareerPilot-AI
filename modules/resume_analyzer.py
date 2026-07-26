@@ -85,6 +85,7 @@ def resume_analysis():
     st.divider()
 
     st.markdown("## ⭐ Resume Match Score")
+    score = analysis_result.get("ats_score", 0)
 
     col1, col2, col3 = st.columns(3)
 
