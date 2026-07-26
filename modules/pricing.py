@@ -132,7 +132,8 @@ def pricing():
                 if verify_payment(
                     order_id,
                     payment_id,
-                    signature
+                    signature,
+                    st.session_state.user_email
                 ):
 
                     upgrade_user(
