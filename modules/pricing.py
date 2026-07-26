@@ -4,7 +4,6 @@ import streamlit.components.v1 as components
 from payment import (
     create_order,
     verify_payment,
-    upgrade_user,
     get_user_plan,
 )
 
