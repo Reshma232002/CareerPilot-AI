@@ -35,7 +35,8 @@ def create_order(amount):
 # -------------------------
 # Verify Payment
 # -------------------------
-def verify_payment(order_id, payment_id, signature):
+def verify_payment(order_id, payment_id, signature, user_email):
+
     secret = st.secrets["RAZORPAY_KEY_SECRET"]
 
     body = f"{order_id}|{payment_id}"
@@ -46,8 +47,16 @@ def verify_payment(order_id, payment_id, signature):
         hashlib.sha256
     ).hexdigest()
 
-    return generated_signature == signature
+    if generated_signature == signature:
 
+        upgrade_user(
+            user_email,
+            "premium"
+        )
+
+        return True
+
+    return False
 
 # -------------------------
 # Update User Plan
