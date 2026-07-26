@@ -8,7 +8,6 @@ firebaseConfig = {
     "messagingSenderId": "1065454730693",
     "appId": "1:1065454730693:web:9b00d272629c912a599fac",
     "databaseURL": ""
-
 }
 
 firebase = pyrebase.initialize_app(firebaseConfig)
