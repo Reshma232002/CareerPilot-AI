@@ -65,6 +65,7 @@ def resume_analysis():
             resume_text,
             job_description
         )
+        score = result.get("score", 0)
 
         gemini_output = generate_ai_content(
             resume_text,
@@ -85,7 +86,6 @@ def resume_analysis():
     st.divider()
 
     st.markdown("## ⭐ Resume Match Score")
-    score = analysis_result.get("ats_score", 0)
 
     col1, col2, col3 = st.columns(3)
 
