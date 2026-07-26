@@ -35,7 +35,7 @@ def create_order(amount):
 # -------------------------
 # Verify Payment
 # -------------------------
-def verify_payment(order_id, payment_id, signature, user_email):
+def verify_payment(order_id, payment_id, signature, user_email, plan):
 
     secret = st.secrets["RAZORPAY_KEY_SECRET"]
 
@@ -51,7 +51,7 @@ def verify_payment(order_id, payment_id, signature, user_email):
 
         upgrade_user(
             user_email,
-            "premium"
+            plan
         )
 
         return True
