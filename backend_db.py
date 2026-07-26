@@ -2,6 +2,10 @@ from datetime import datetime
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+
+import streamlit as st
+
+print(st.secrets)
 # ======================================
 # Firebase Initialization
 # ======================================
