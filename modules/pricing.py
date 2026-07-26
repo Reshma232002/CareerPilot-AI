@@ -132,7 +132,8 @@ def pricing():
                     order_id,
                     payment_id,
                     signature,
-                    st.session_state.user_email        
+                    st.session_state.user_email,
+                    "premium"        
                 ):
 
                     st.success("🎉 Premium Activated!")
@@ -223,7 +224,8 @@ Everything in Premium +
                     order_id,
                     payment_id,
                     signature,
-                    st.session_state.user_email
+                    st.session_state.user_email,
+                    "recruiter"
                 ):
 
                     st.success("🎉 Recruiter Activated!")
