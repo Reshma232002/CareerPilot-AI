@@ -1,85 +1,101 @@
-import razorpay
 import streamlit as st
+import razorpay
 import hmac
 import hashlib
+from datetime import datetime
+from firebase_admin import firestore
 from backend_db import db
 
 
-# -------------------------
-# Razorpay Client
-# -------------------------
-def get_client():
-    return razorpay.Client(
-        auth=(
-            st.secrets["RAZORPAY_KEY_ID"],
-            st.secrets["RAZORPAY_KEY_SECRET"]
-        )
+client = razorpay.Client(
+    auth=(
+        st.secrets["RAZORPAY_KEY_ID"],
+        st.secrets["RAZORPAY_KEY_SECRET"]
+    )
+)
+
+
+
+
+def save_order(email, order_id, plan, amount):
+
+    try:
+        user_id = email.replace(".", "_")
+
+        db.collection("payments").document(order_id).set({
+
+            "email": email,
+            "user_id": user_id,
+            "order_id": order_id,
+            "plan": plan,
+            "amount": amount,
+            "status": "created",
+            "created_at": datetime.now()
+
+        })
+
+        print("Order saved successfully")
+
+    except Exception as e:
+        print("Order save failed:", e)
+
+def create_order(plan, email):
+
+    if plan == "premium":
+        amount = 99
+
+    elif plan == "recruiter":
+        amount = 299
+
+    else:
+        amount = 0
+
+
+    order = client.order.create(
+        {
+            "amount": amount * 100,
+            "currency": "INR",
+            "payment_capture": 1,
+            "notes": {
+                "plan": plan,
+                "email": email
+            }
+        }
     )
 
+    print("RAZORPAY RESPONSE:", order)
+    save_order(
+        email,
+        order["id"],
+        plan,
+        amount
+    )
 
-# -------------------------
-# Create Order
-# -------------------------
-def create_order(amount):
-    client = get_client()
-
-    order = client.order.create({
-        "amount": int(amount * 100),
-        "currency": "INR",
-        "receipt": "receipt_001"
-    })
+    order["key"] = st.secrets["RAZORPAY_KEY_ID"]
 
     return order
 
 
-# -------------------------
-# Verify Payment
-# -------------------------
-def verify_payment(order_id, payment_id, signature, user_email, plan):
 
-    secret = st.secrets["RAZORPAY_KEY_SECRET"]
+def verify_payment(
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature
+):
 
-    body = f"{order_id}|{payment_id}"
+    msg = razorpay_order_id + "|" + razorpay_payment_id
 
     generated_signature = hmac.new(
-        bytes(secret, "utf-8"),
-        bytes(body, "utf-8"),
+        bytes(st.secrets["RAZORPAY_KEY_SECRET"], "utf-8"),
+        bytes(msg, "utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-    if generated_signature == signature:
-
-        upgrade_user(
-            user_email,
-            plan
-        )
-
-        return True
-
-    return False
-
-# -------------------------
-# Update User Plan
-# -------------------------
-def upgrade_user(user_email, plan):
-    user_ref = db.collection("users").document(
-        user_email.replace(".", "_")
-    )
-
-    user_ref.set({"plan": plan}, merge=True)
+    return generated_signature == razorpay_signature
 
 
-# -------------------------
-# Get User Plan
-# -------------------------
-def get_user_plan(user_email):
-    user_ref = db.collection("users").document(
-        user_email.replace(".", "_")
-    )
+def get_user_plan(email):
 
-    doc = user_ref.get()
+    from backend_db import get_user_plan_from_db
 
-    if doc.exists:
-        return doc.to_dict().get("plan", "free")
-
-    return "free"
+    return get_user_plan_from_db(email)
