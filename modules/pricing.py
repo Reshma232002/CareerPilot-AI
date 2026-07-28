@@ -8,30 +8,78 @@ from payment import (
 )
 
 
+def razorpay_checkout(order, plan_name):
+
+    checkout_html = f"""
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script>
+
+    var options = {{
+
+        "key": "{order['key']}",
+
+        "amount": "{order['amount']}",
+
+        "currency": "INR",
+
+        "name": "CareerPilot AI",
+
+        "description": "{plan_name} Subscription",
+
+        "order_id": "{order['id']}",
+
+        "handler": function(response) {{
+
+            window.parent.postMessage({{
+                payment_id: response.razorpay_payment_id,
+                order_id: response.razorpay_order_id,
+                signature: response.razorpay_signature
+            }}, "*");
+
+        }}
+
+    }};
+
+
+    var rzp = new Razorpay(options);
+
+    rzp.open();
+
+    </script>
+    """
+
+    components.html(
+        checkout_html,
+        height=600
+    )
+
+
+
 def pricing():
 
-    st.title(" Pricing Plans")
+    st.title("Pricing Plans")
     st.caption("Upgrade your CareerPilot AI experience.")
+
 
     # -----------------------------
     # Current Plan
     # -----------------------------
-    current_plan = get_user_plan(st.session_state.user_email)
+    current_plan = get_user_plan(
+        st.session_state.user_email
+    )
 
-    st.success(f"Current Plan: **{current_plan.upper()}**")
+    st.success(
+        f"Current Plan: **{current_plan.upper()}**"
+    )
+
 
     st.divider()
 
-    # -----------------------------
-    # Session State
-    # -----------------------------
-    if "premium_order" not in st.session_state:
-        st.session_state.premium_order = None
-
-    if "recruiter_order" not in st.session_state:
-        st.session_state.recruiter_order = None
 
     col1, col2, col3 = st.columns(3)
+
+
 
     # =====================================================
     # FREE PLAN
@@ -41,7 +89,7 @@ def pricing():
         st.subheader("🆓 Free")
 
         st.markdown("""
-### ₹0 / month
+### $0 / month
 
 ✅ 1 Resume Analysis / Day
 
@@ -55,6 +103,7 @@ def pricing():
 
 ❌ Priority Support
 """)
+
 
     # =====================================================
     # PREMIUM PLAN
@@ -81,70 +130,35 @@ def pricing():
 ✅ Priority Support
 """)
 
+
         if current_plan.lower() == "premium":
 
-            st.success("You're already on Premium 🎉")
+            st.success(
+                "You're already on Premium 🎉"
+            )
 
         else:
 
-            if st.button("Upgrade to Premium ₹99", use_container_width=True):
+            if st.button(
+                "Upgrade to Premium ₹99",
+                use_container_width=True
+            ):
 
-                order = create_order(99)
+                order = create_order(
+                    "premium",
+                    st.session_state.user_email
+                )
+
 
                 st.session_state.premium_order = order["id"]
 
-                checkout_html = f"""
-                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-                <script>
-                var options = {{
-                    "key": "{st.secrets["RAZORPAY_KEY_ID"]}",
-                    "amount": "9900",
-                    "currency": "INR",
-                    "name": "CareerPilot AI",
-                    "description": "Premium Plan",
-                    "order_id": "{order['id']}",
-                    "handler": function (response){{
-                        window.parent.postMessage(response, "*");
-                    }}
-                }};
+                razorpay_checkout(
+                    order,
+                    "Premium Plan"
+                )
 
-                var rzp = new Razorpay(options);
-                rzp.open();
-                </script>
-                """
 
-                components.html(checkout_html, height=600)
-
-        if st.session_state.premium_order:
-
-            st.markdown("### Verify Payment")
-
-            order_id = st.text_input("Order ID")
-
-            payment_id = st.text_input("Payment ID")
-
-            signature = st.text_input("Signature")
-
-            if st.button("Verify Premium Payment"):
-
-                if verify_payment(
-                    order_id,
-                    payment_id,
-                    signature,
-                    st.session_state.user_email,
-                    "premium"        
-                ):
-
-                    st.success("🎉 Premium Activated!")
-
-                    st.session_state.premium_order = None
-
-                    st.rerun()
-
-                else:
-
-                    st.error("Payment Verification Failed")
 
     # =====================================================
     # RECRUITER PLAN
@@ -152,6 +166,7 @@ def pricing():
     with col3:
 
         st.subheader("🚀 Recruiter")
+
 
         st.markdown("""
 ### ₹299 / month
@@ -173,67 +188,31 @@ Everything in Premium +
 ✅ Priority Support
 """)
 
+
         if current_plan.lower() == "recruiter":
 
-            st.success("You're already on Recruiter 🎉")
+            st.success(
+                "You're already on Recruiter 🎉"
+            )
+
 
         else:
 
-            if st.button("Upgrade to Recruiter ₹299", use_container_width=True):
+            if st.button(
+                "Upgrade to Recruiter ₹299",
+                use_container_width=True
+            ):
 
-                order = create_order(299)
+                order = create_order(
+                    "recruiter",
+                    st.session_state.user_email
+                )
+
 
                 st.session_state.recruiter_order = order["id"]
 
-                checkout_html = f"""
-                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-                <script>
-                var options = {{
-                    "key": "{st.secrets["RAZORPAY_KEY_ID"]}",
-                    "amount": "29900",
-                    "currency": "INR",
-                    "name": "CareerPilot AI",
-                    "description": "Recruiter Plan",
-                    "order_id": "{order['id']}",
-                    "handler": function(response){{
-                        window.parent.postMessage(response, "*");
-                    }}
-                }};
-
-                var rzp = new Razorpay(options);
-                rzp.open();
-                </script>
-                """
-
-                components.html(checkout_html, height=600)
-
-        if st.session_state.recruiter_order:
-
-            st.markdown("### Verify Payment")
-
-            order_id = st.text_input("Recruiter Order ID")
-
-            payment_id = st.text_input("Recruiter Payment ID")
-
-            signature = st.text_input("Recruiter Signature")
-
-            if st.button("Verify Recruiter Payment"):
-
-                if verify_payment(
-                    order_id,
-                    payment_id,
-                    signature,
-                    st.session_state.user_email,
-                    "recruiter"
-                ):
-
-                    st.success("🎉 Recruiter Activated!")
-
-                    st.session_state.recruiter_order = None
-
-                    st.rerun()
-
-                else:
-
-                    st.error("Payment Verification Failed")
+                razorpay_checkout(
+                    order,
+                    "Recruiter Plan"
+                )
