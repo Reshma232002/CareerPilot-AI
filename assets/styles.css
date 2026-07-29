@@ -8,23 +8,12 @@
 /* ==========================================================
    STREAMLIT CLEANUP
    ========================================================== */
-
-
 #MainMenu {
-
     visibility: hidden;
-
 }
-
-header {
-    background: transparent !important;
-}
-
 
 footer {
-
     visibility: hidden;
-
 }
 
 
