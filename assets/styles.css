@@ -16,11 +16,8 @@
 
 }
 
-
 header {
-
-    visibility: hidden;
-
+    background: transparent !important;
 }
 
 
